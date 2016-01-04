@@ -1,0 +1,55 @@
+#!/bin/bash
+case $1 in
+     stop)
+	iptables -X 
+	iptables -F
+	iptables -P INPUT ACCEPT
+	iptables -P OUTPUT ACCEPT
+	iptables -P FORWARD ACCEPT
+	;;
+     start)	
+# Limpando politicas e regras
+
+echo "Limpando as regras"
+iptables -X
+iptables -F
+
+# Configurando as politicas padroes
+iptables -P INPUT DROP
+iptables -P OUTPUT DROP
+iptables -P FORWARD DROP
+#ipv6
+ip6tables -P INPUT DROP
+ip6tables -P OUTPUT DROP
+ip6tables -P FORWARD DROP
+echo "Politica padrao aplicada"
+
+# Configurando portas de entrada
+iptables -A INPUT -m state --state ESTABLISHED -j ACCEPT
+iptables -A INPUT -p tcp --dport 80 -m state --state NEW -j ACCEPT
+iptables -A INPUT -p tcp --dport 443 -m state --state NEW -j ACCEPT
+iptables -A INPUT -p udp --dport 53 -m state --state NEW -j ACCEPT
+iptables -A INPUT -p icmp -m icmp --icmp-type 8 -m state --state NEW -j ACCEPT
+iptables -A INPUT -j DROP
+# Configurando portas de saida
+iptables -A OUTPUT -p tcp --dport 80 -j ACCEPT
+iptables -A OUTPUT -p tcp --dport 443 -j ACCEPT
+#iptables -A OUTPUT -p tcp --dport 21 -j ACCEPT
+#iptables -A OUTPUT -p tcp --dport 1863 -j ACCEPT
+iptables -A OUTPUT -p icmp --icmp-type echo-request -j ACCEPT
+iptables -A OUTPUT -p udp --dport 53 -j ACCEPT 
+echo "Regras geradas"
+echo "Firewall Ativo"
+	;;
+   restart) 
+	   $0 stop
+	   echo 'Desabilitando o firewall....[OK]'
+	   sleep 0
+	   echo 'Habilitando o firewall.....[OK]'
+	   $0 start
+	;;
+   *)
+	   echo 'Utilize somente "/etc/rc.d/rc.firewall start|stop|restart"'
+	;;
+esac
+
