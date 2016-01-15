@@ -10,11 +10,14 @@
 # Author: Tomas M. <http://slax.linux-live.org/>
 #
 #ALLOWED_PORTS="20 21 22 25 80 110 143 443"
-
+DNS="208.67.222.222 208.67.220.220"
 ALLOWED_PORTS="80 443"
 #-----------------------------------------------------------
 
 if [ "$1" = "start" ]; then
+
+echo "nameserver 208.67.222.222" > /etc/resolv.config
+echo "nameserver 208.67.220.220" >> /etc/resolv.config
 
    SYSCTLW="/sbin/sysctl -q -w"
    IPTABLES="/usr/sbin/iptables"
@@ -24,7 +27,7 @@ if [ "$1" = "start" ]; then
    # the same interface, not another. Helps to maintain state
    # Also protects against IP spoofing
 
-   $SYSCTLW net.ipv4.conf.all.rp_filter=1
+ #  $SYSCTLW net.ipv4.conf.all.rp_filter=1
 
    # Enable logging of packets with malformed IP addresses,
    # Disable redirects,
@@ -62,10 +65,10 @@ if [ "$1" = "start" ]; then
    $IP6TABLES -A OUTPUT -o lo -j ACCEPT
 
    # allow DNS in all directions
-   $IPTABLES -A INPUT -p udp --dport 53 -j ACCEPT
-   $IPTABLES -A INPUT -p udp --sport 53 -j ACCEPT
-   $IPTABLES -A OUTPUT -p udp --dport 53 -j ACCEPT
-   $IPTABLES -A OUTPUT -p udp --sport 53 -j ACCEPT
+   $IPTABLES -A INPUT -p udp -s $DNS --dport 53 -j ACCEPT
+   $IPTABLES -A INPUT -p udp -d $DNS --sport 53 -j ACCEPT
+   $IPTABLES -A OUTPUT -p udp -s $DNS --dport 53 -j ACCEPT
+   $IPTABLES -A OUTPUT -p udp -d $DNS --sport 53 -j ACCEPT
 
    # Allow previously established connections
    $IPTABLES -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT

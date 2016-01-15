@@ -1,0 +1,35 @@
+*filter
+:INPUT DROP [0:0]
+:FORWARD DROP [0:0]
+:OUTPUT DROP [0:0]
+:TCP - [0:0]
+:UDP - [0:0]
+-A INPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+-A INPUT -p tcp --dport 2332 -s 10.0.0.0/24 -j ACCEPT
+-A INPUT -p tcp --dport 2445 -s 10.0.0.0/24 -j ACCEPT
+-A INPUT -p tcp --dport 22 -s 10.0.0.120 -j ACCEPT
+-A INPUT -p icmp -s 10.0.0.120 -j ACCEPT
+-A INPUT -i lo -j ACCEPT
+-A INPUT -p tcp --tcp-flags FIN,SYN,RST,ACK SYN -m conntrack --ctstate NEW -j TCP
+-A INPUT -p tcp -m conntrack --ctstate NEW -j UDP
+-A TCP -p tcp --dport 443 -j ACCEPT
+-A UDP -p udp --dport 53 -s 208.67.222.222 -j ACCEPT
+
+-A OUTPUT -m conntrack --ctstate RELATED,ESTABLISHED -j ACCEPT
+-A OUTPUT -p icmp -d 10.0.0.120 -j ACCEPT
+-A OUTPUT -p tcp --dport 80 -j ACCEPT
+-A OUTPUT -p tcp --dport 443 -j ACCEPT
+-A OUTPUT -p udp --dport 53 -d 208.67.222.222 -j ACCEPT
+-A OUTPUT -p tcp --dport 2332 -d 10.0.0.0/24 -j ACCEPT
+-A OUTPUT -p tcp --dport 2445 -d 10.0.0.0/24 -j ACCEPT
+-A OUTPUT -p tcp --dport 22 -d 10.0.0.120 -j ACCEPT
+#-A OUTPUT -p tcp --dport 9150 -j ACCEPT
+#-A OUTPUT -p tcp --dport 9151 -j ACCEPT
+-A OUTPUT -p icmp -j ACCEPT
+
+COMMIT
+
+
+#Block echo requests
+#/etc/sysctl.d/90-firewall.conf
+#net.ipv4.icmp_echo_ignore_all = 1

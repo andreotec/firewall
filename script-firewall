@@ -1,0 +1,46 @@
+#!/bin/bash 
+
+DNS="208.67.222.222 208.67.220.220"
+ALLOWED_PORTS="80 443"
+
+# Firewall initialization, remove everything, start with clean tables
+   $IPTABLES -F      # remove all rules
+   $IPTABLES -X      # delete all user-defined chains
+
+   # allow everything ONLY for loop device
+   $IPTABLES -P INPUT DROP
+   $IPTABLES -P OUTPUT DROP
+   $IPTABLES -P FORWARD DROP
+   $IPTABLES -A INPUT -i lo -j ACCEPT
+   $IPTABLES -A OUTPUT -o lo -j ACCEPT
+
+#Block all trafic ipv6
+
+   $IP6TABLES -P INPUT DROP
+   $IP6TABLES -P OUTPUT DROP
+   $IP6TABLES -P FORWARD DROP
+   $IP6TABLES -A INPUT -i lo -j ACCEPT
+   $IP6TABLES -A OUTPUT -o lo -j ACCEPT
+
+   # allow DNS in all directions
+   $IPTABLES -A INPUT -p udp -s $DNS --dport 53 -j ACCEPT
+   $IPTABLES -A INPUT -p udp -d $DNS --sport 53 -j ACCEPT
+   $IPTABLES -A OUTPUT -p udp -s $DNS --dport 53 -j ACCEPT
+   $IPTABLES -A OUTPUT -p udp -d $DNS --sport 53 -j ACCEPT
+
+   # Allow previously established connections
+   $IPTABLES -A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
+
+   for PORT in $ALLOWED_PORTS; do
+   $IPTABLES -A OUTPUT -p tcp --dport $PORT -m state --state NEW,ESTABLISHED -j ACCEPT
+   $IPTABLES -A INPUT -p tcp --sport $PORT -m state --state ESTABLISHED -j ACCEPT
+   done
+
+   # Create a chain for logging all dropped packets
+   $IPTABLES -N LOG_DROP
+   $IPTABLES -A LOG_DROP -j LOG --log-prefix "Attack log: "
+   $IPTABLES -A LOG_DROP -j DROP
+
+   $IPTABLES -A INPUT -j LOG_DROP    # drop all incomming
+#   $IPTABLES -A FORWARD -j LOG_DROP  # drop all forwarded
+   $IPTABLES -A OUTPUT -j LOG_DROP #drop all output	

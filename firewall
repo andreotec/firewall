@@ -1,0 +1,64 @@
+#!/bin/sh
+#
+#
+# chkconfig: 2345 09 91
+# description:	Starts, stops and saves iptables firewall
+#
+#
+### BEGIN INIT INFO
+# Provides: firewall
+# Required-Start: iptables ip6tables
+# Required-Stop: iptables ip6tables
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: start and stop iptables firewall
+# Description: Start, stop and save iptables firewall
+### END INIT INFO
+
+LAN="10.0.0.0/24"
+PA="1024:65535"
+FW="10.0.0.120"
+case $1 in
+  stop)
+     iptables -P OUTPUT ACCEPT
+     iptables -P INPUT ACCEPT
+     iptables -P FORWARD ACCEPT
+     iptables -t nat -F
+     iptables -t filter -F
+  ;;
+
+  start)
+     iptables -P OUTPUT DROP
+     iptables -P INPUT  DROP
+     iptables -P FORWARD DROP
+     ip6tables -P OUTPUT DROP
+     ip6tables -P INPUT DROP
+     ip6tables -P FORWARD DROP
+
+
+#Habilita o acesso SSH para a máquina firewall
+     iptables -A INPUT -p tcp -s $LAN --sport $PA -d $FW --dport 2332 -j ACCEPT
+     iptables -A OUTPUT -p tcp -s $FW --sport 2332 -d $LAN --dport $PA -j ACCEPT
+
+#Habilita ping entre cliente e server
+     iptables -A INPUT -p icmp -s 10.0.0.100 -d $FW -j ACCEPT
+     iptables -A OUTPUT -p icmp -d $FW -d 10.0.0.100 -j ACCEPT
+#SSH na máquina cliente
+
+       for ssh in 100 ; do
+	ipt ables -A OUTPUT -p tcp --sport $PA -s $FW -d 10.0.0.$ssh --dport 22 -j ACCEPT   
+	iptables -A INPUT -p tcp --sport 22 -s 10.0.0.$ssh -d $FW --dport $PA -j ACCEPT
+     done
+  ;;
+
+  restart)
+     $0 stop
+	echo 'Desabilitando o Firewall....... [OK]'
+  	sleep 1.0
+     $0 start
+	echo 'Habilitando o Firewall......... [OK]'
+  ;;
+*)   
+        echo 'Utilize somente "service firewall start|stop|restart"'
+  ;;
+esac
