@@ -1,0 +1,41 @@
+#!/bin/bash
+
+echo "nameserver 208.67.222.222" > /etc/resolv.conf
+
+ipt=iptables
+ip6=ip6tables
+
+$ipt -P INPUT DROP
+$ipt -P OUTPUT DROP
+$ipt -P FORWARD DROP
+
+$ip6 -P INPUT DROP
+$ip6 -P OUTPUT DROP
+$ip6 -P FORWARD DROP
+
+#Registar e negar pacotes inválidos
+$ipt -A INPUT -m state --state INVALID -j LOG --log-prefix "INVALID " --log-ip-options --log-tcp-options --log-tcp-sequence --log-level 4
+$ipt -A INPUT -m state --state INVALID -j DROP
+
+
+$ipt -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+$ipt -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+ 
+#Libera internet
+$ipt -A OUTPUT -p tcp --dport 80 -m state --state NEW -j ACCEPT
+$ipt -A OUTPUT -p tcp --dport 443 -m state --state NEW -j ACCEPT
+$ipt -A OUTPUT -p udp --dport 53 -d 208.67.222.222 -m state --state NEW -j ACCEPT
+$ipt -A OUTPUT -p tcp --dport 8081 -d parabola.isacdaavid.info -m state --state NEW -j ACCEPT
+
+#REGRAS ESPECIAIS
+#Samba
+$ipt -A OUTPUT -p tcp -o wlan0 --dport 137:139 -d 192.168.25.220 -m state --state NEW -j ACCEPT
+#Torrent
+#$ipt -A OUTPUT -p udp -o wlan0 --sport 51413 -m state --state NEW -j ACCEPT
+
+#Proteção
+$ipt -N syn_flood
+$ipt -A syn_flood -m limit --limit 10/second --limit-burst 5 -j RETURN
+$ipt -A syn_flood -j DROP
+$ipt -A INPUT -p tcp --syn -j syn_flood
+
