@@ -1,10 +1,23 @@
 #!/bin/bash
 
+echo "Habilitando OpenDNS"
+sleep 1
+#OpenDNS como servidor DNS fixo.
 echo "nameserver 208.67.222.222" > /etc/resolv.conf
 
 ipt=iptables
 ip6=ip6tables
 
+echo "Limpado regras antigas"
+iptables -F
+sleep 1
+echo "Zerando contadores"
+iptables -Z
+sleep 1
+echo "Limpando cadeias"
+sleep 1
+echo "Aplicando política padrão"
+sleep 1
 $ipt -P INPUT DROP
 $ipt -P OUTPUT DROP
 $ipt -P FORWARD DROP
@@ -18,24 +31,36 @@ $ipt -A INPUT -m state --state INVALID -j LOG --log-prefix "INVALID " --log-ip-o
 $ipt -A INPUT -m state --state INVALID -j DROP
 
 
-$ipt -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
-$ipt -A OUTPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+$ipt -A INPUT -m state --state ESTABLISHED,RELATED,NEW -j ACCEPT
+$ipt -A OUTPUT -m state --state ESTABLISHED,RELATED,NEW -j ACCEPT
  
 #Libera internet
 $ipt -A OUTPUT -p tcp --dport 80 -m state --state NEW -j ACCEPT
 $ipt -A OUTPUT -p tcp --dport 443 -m state --state NEW -j ACCEPT
+
+#Libera DNS apenas para OpenDNS, nenhum outro será aceito
 $ipt -A OUTPUT -p udp --dport 53 -d 208.67.222.222 -m state --state NEW -j ACCEPT
+
+#Repositório especial do Parábola GNU/Linux
 $ipt -A OUTPUT -p tcp --dport 8081 -d parabola.isacdaavid.info -m state --state NEW -j ACCEPT
 
-#REGRAS ESPECIAIS
-#Samba
-$ipt -A OUTPUT -p tcp -o wlan0 --dport 137:139 -d 192.168.25.220 -m state --state NEW -j ACCEPT
-#Torrent
-#$ipt -A OUTPUT -p udp -o wlan0 --sport 51413 -m state --state NEW -j ACCEPT
+######REGRAS ESPECIAIS################
 
-#Proteção
+#Libera acesso à máquina windows com host específico
+$ipt -A OUTPUT -p tcp --dport microsoft-ds -d 192.168.25.220 -m state --state NEW -j ACCEPT
+
+
+#Libera tráfego torrent para cliente Transmission-qt
+
+$ipt -A INPUT -p udp --dport 51413 -m state --state NEW -j ACCEPT
+$ipt -A OUTPUT -p udp --sport 51413 -m state --state NEW -j ACCEPT
+
+#Proteção contra ataques syn_floods
 $ipt -N syn_flood
 $ipt -A syn_flood -m limit --limit 10/second --limit-burst 5 -j RETURN
 $ipt -A syn_flood -j DROP
 $ipt -A INPUT -p tcp --syn -j syn_flood
 
+echo "Listando regras"
+sleep 2
+iptables -nvL --line
