@@ -1,8 +1,8 @@
    26  pacman -S vim git
-   27  git clone http://github.com/andreotec/firewall
-   39  git add firewall-andreo
+   27  git clone http://github.com/seu-usuario/repositorio
+   39  git add repositorio
    40  git status
-   42  git config --global user.email "andreotec@gmail.com"
-   43  git config --global user.name "andreotec"
-   44  git commit -m "Novo script de firewall firewall-andreo"
+   42  git config --global user.email "seuemail@email.com"
+   43  git config --global user.name "seu-usuario"
+   44  git commit -m "Novas alterações"
    45  git push origin master
