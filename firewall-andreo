@@ -1,23 +1,62 @@
 #!/bin/bash
-
+################################
 echo "Habilitando OpenDNS"
-sleep 1
+echo -ne '#####                     (33%)\r'
+   sleep 1
+   echo -ne '#############             (66%)\r'
+   sleep 1
+   echo -ne '#######################   (100%)\r'
+   echo -ne '\n'
+
 #OpenDNS como servidor DNS fixo.
 echo "nameserver 208.67.222.222" > /etc/resolv.conf
+echo "nameserver 208.67.220.220" > /etc/resolv.conf
+###############################
+
 
 ipt=iptables
 ip6=ip6tables
 
+##############################
 echo "Limpado regras antigas"
 iptables -F
-sleep 1
+echo -ne '#####                     (33%)\r'
+   sleep 1
+   echo -ne '#############             (66%)\r'
+   sleep 1
+   echo -ne '#######################   (100%)\r'
+   echo -ne '\n'
+
+#############################
+
 echo "Zerando contadores"
 iptables -Z
-sleep 1
+echo -ne '#####                     (33%)\r'
+   sleep 1
+   echo -ne '#############             (66%)\r'
+   sleep 1
+   echo -ne '#######################   (100%)\r'
+   echo -ne '\n'
+############################
+
 echo "Limpando cadeias"
-sleep 1
+$ipt -X
+echo -ne '#####                     (33%)\r'
+   sleep 1
+   echo -ne '#############             (66%)\r'
+   sleep 1
+   echo -ne '#######################   (100%)\r'
+   echo -ne '\n'
+
+###########################
 echo "Aplicando política padrão"
-sleep 1
+echo -ne '#####                     (33%)\r'
+   sleep 1
+   echo -ne '#############             (66%)\r'
+   sleep 1
+   echo -ne '#######################   (100%)\r'
+   echo -ne '\n'
+
 $ipt -P INPUT DROP
 $ipt -P OUTPUT DROP
 $ipt -P FORWARD DROP
@@ -25,6 +64,8 @@ $ipt -P FORWARD DROP
 $ip6 -P INPUT DROP
 $ip6 -P OUTPUT DROP
 $ip6 -P FORWARD DROP
+###########################
+
 
 #Registar e negar pacotes inválidos
 $ipt -A INPUT -m state --state INVALID -j LOG --log-prefix "INVALID " --log-ip-options --log-tcp-options --log-tcp-sequence --log-level 4
@@ -35,11 +76,14 @@ $ipt -A INPUT -m state --state ESTABLISHED,RELATED,NEW -j ACCEPT
 $ipt -A OUTPUT -m state --state ESTABLISHED,RELATED,NEW -j ACCEPT
  
 #Libera internet
-$ipt -A OUTPUT -p tcp --dport 80 -m state --state NEW -j ACCEPT
-$ipt -A OUTPUT -p tcp --dport 443 -m state --state NEW -j ACCEPT
+for net in 80 443; do
+$ipt -A OUTPUT -p tcp --dport $net -m state --state NEW -j ACCEPT
+done
 
 #Libera DNS apenas para OpenDNS, nenhum outro será aceito
-$ipt -A OUTPUT -p udp --dport 53 -d 208.67.222.222 -m state --state NEW -j ACCEPT
+for dns in 208.67.222.222 208.67.220.220; do
+$ipt -A OUTPUT -p udp --dport 53 -d $dns -m state --state NEW -j ACCEPT
+done
 
 #Repositório especial do Parábola GNU/Linux
 $ipt -A OUTPUT -p tcp --dport 8081 -d parabola.isacdaavid.info -m state --state NEW -j ACCEPT
@@ -51,10 +95,10 @@ $ipt -A OUTPUT -p tcp --dport microsoft-ds -d 192.168.25.220 -m state --state NE
 
 
 #Libera tráfego torrent para cliente Transmission-qt
-
-$ipt -A INPUT -p udp --dport 51413 -m state --state NEW -j ACCEPT
-$ipt -A OUTPUT -p udp --sport 51413 -m state --state NEW -j ACCEPT
-
+for torr in 51413; do
+$ipt -A INPUT -p udp --dport $torr -m state --state NEW -j ACCEPT
+$ipt -A OUTPUT -p udp --sport $torr -m state --state NEW -j ACCEPT
+done
 #Proteção contra ataques syn_floods
 $ipt -N syn_flood
 $ipt -A syn_flood -m limit --limit 10/second --limit-burst 5 -j RETURN
@@ -62,5 +106,10 @@ $ipt -A syn_flood -j DROP
 $ipt -A INPUT -p tcp --syn -j syn_flood
 
 echo "Listando regras"
-sleep 2
-iptables -nvL --line
+echo -ne '#####                     (33%)\r'
+   sleep 1
+   echo -ne '#############             (66%)\r'
+   sleep 1
+   echo -ne '#######################   (100%)\r'
+   echo -ne '\n'
+iptables -S
