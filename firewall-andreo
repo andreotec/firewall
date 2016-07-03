@@ -73,17 +73,17 @@ $ipt -A INPUT -m state --state INVALID -j LOG --log-prefix "INVALID " --log-ip-o
 $ipt -A INPUT -m state --state INVALID -j DROP
 
 
-$ipt -A INPUT -m state --state ESTABLISHED,RELATED,NEW -j ACCEPT
-$ipt -A OUTPUT -m state --state ESTABLISHED,RELATED,NEW -j ACCEPT
+$ipt -A INPUT -i ens3 -m state --state ESTABLISHED,RELATED,NEW -j ACCEPT
+$ipt -A OUTPUT -o ens3 -m state --state ESTABLISHED,RELATED,NEW -j ACCEPT
  
 #Libera internet
 for net in 80 443; do
-$ipt -A OUTPUT -p tcp --dport $net -m state --state NEW -j ACCEPT
+$ipt -A OUTPUT -p tcp -o ens3 --dport $net -m state --state NEW -j ACCEPT
 done
 
 #Libera DNS apenas para OpenDNS, nenhum outro será aceito
 for dns in 208.67.222.222 208.67.220.220; do
-$ipt -A OUTPUT -p udp --dport 53 -d $dns -m state --state NEW -j ACCEPT
+$ipt -A OUTPUT -p udp -o ens3 --dport 53 -d $dns -m state --state NEW -j ACCEPT
 done
 
 #Proteção contra ataques syn_floods
