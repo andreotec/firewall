@@ -10,7 +10,8 @@ echo -ne '#####                     (33%)\r'
 
 #OpenDNS como servidor DNS fixo.
 echo "nameserver 208.67.222.222" > /etc/resolv.conf
-echo "nameserver 208.67.220.220" > /etc/resolv.conf
+echo "nameserver 208.67.220.220" >> /etc/resolv.conf
+chattr +i /etc/resolv.conf
 ###############################
 
 
@@ -85,25 +86,21 @@ for dns in 208.67.222.222 208.67.220.220; do
 $ipt -A OUTPUT -p udp --dport 53 -d $dns -m state --state NEW -j ACCEPT
 done
 
-#Repositório especial do Parábola GNU/Linux
-$ipt -A OUTPUT -p tcp --dport 8081 -d parabola.isacdaavid.info -m state --state NEW -j ACCEPT
-
-######REGRAS ESPECIAIS################
-
-#Libera acesso à máquina windows com host específico
-$ipt -A OUTPUT -p tcp --dport microsoft-ds -d 192.168.25.220 -m state --state NEW -j ACCEPT
-
-
-#Libera tráfego torrent para cliente Transmission-qt
-for torr in 51413; do
-$ipt -A INPUT -p udp --dport $torr -m state --state NEW -j ACCEPT
-$ipt -A OUTPUT -p udp --sport $torr -m state --state NEW -j ACCEPT
-done
 #Proteção contra ataques syn_floods
 $ipt -N syn_flood
 $ipt -A syn_flood -m limit --limit 10/second --limit-burst 5 -j RETURN
 $ipt -A syn_flood -j DROP
 $ipt -A INPUT -p tcp --syn -j syn_flood
+
+echo "Salvando regras"
+echo -ne '#####                     (33%)\r'
+   sleep 1
+   echo -ne '#############             (66%)\r'
+   sleep 1
+   echo -ne '#######################   (100%)\r'
+   echo -ne '\n'
+iptables-save > /etc/sysconfig/iptables
+ip6tables-save > /etc/sysconfig/ip6tables
 
 echo "Listando regras"
 echo -ne '#####                     (33%)\r'
