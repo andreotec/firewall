@@ -1,9 +1,9 @@
 #!/bin/bash
 
-echo "Iniciando 
+echo "Iniciando" 
 
-ipt=/bin/iptables
-ip6=/bin/ip6tables
+ipt=iptables
+ip6=ip6tables
 
 $ipt -F
 $ipt -Z
@@ -36,22 +36,15 @@ $ipt -A INPUT -p tcp --syn -j syn_flood
 
 for net in 80 443; do
 $ipt -A TCP -p tcp --sport $net -j ACCEPT
+
 done
+
+$ipt -A TCP -p tcp --dport 80 -j ACCEPT
+$ipt -A UDP -p udp --dport 53 -j ACCEPT
 
 $ipt -I TCP -p tcp -m recent --update --seconds 60 --name TCP-PORTSCAN -j REJECT --reject-with tcp-reset
 
-for dns in 208.67.222.222 208.67.220.220; do
-$ipt -A UDP -p udp --sport 53 -s $dns -j ACCEPT
-done
 
 $ipt -I UDP -p udp -m recent --update --seconds 60 --name UDP-PORTSCAN -j REJECT --reject-with icmp-port-unreachable
 
 
-
-#Comandos opcionais
-#echo "nameserver  208.67.222.123" > /etc/resolv.conf
-#echo "nameserver  208.67.220.123" >> /etc/resolv.conf
-#chattr +i /etc/resolv.conf
-
-#Block echo requests
-echo "net.ipv4.icmp_echo_ignore_all = 1" > /etc/sysctl.d/90-firewall.conf
